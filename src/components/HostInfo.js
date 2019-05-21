@@ -4,26 +4,63 @@ import { Radio, Icon, Card, Grid, Image, Dropdown, Divider } from 'semantic-ui-r
 
 
 class HostInfo extends Component {
-  state = {
-    options: [{key: "some_area" text: "Some Area" value: "some_area"}, {key: "another_area" text: "Another Area" value: "another_area"}],
-    value: "some_area",
-    // This state is just to show how the dropdown component works.
-    // Options have to be formatted in this way (array of objects with keys of: key, text, value)
-    // Value has to match the value in the object to render the right text.
 
-    // IMPORTANT: But whether it should be stateful or not is entirely up to you. Change this component however you like.
+  constructor(props){
+    super(props)
+    this.state = {
+      currentHostId: -1,
+      active: this.props.host.active
+    }
   }
 
+  static getDerivedStateFromProps(props, state){
 
+    if(props.host.id !== state.currentHostId) {
+      return {
+        currentHostId: props.host.id,
+        options: props.areas.map(area => {
+          return {key: area.name,
+                  text: area.name.split("_").map(name => name.charAt(0).toUpperCase()+name.slice(1)).join(" "),
+                  value: area.name
+                }
+          }),
+        value: props.host.area,
+        active: props.host.active
+      }
+    }
+    return null
 
-  handleChange = (e, {value}) => {
-    // the 'value' attribute is given via Semantic's Dropdown component.
-    // Put a debugger in here and see what the "value" variable is when you pass in different options.
-    // See the Semantic docs for more info: https://react.semantic-ui.com/modules/dropdown/#usage-controlled
   }
 
-  toggle = () => {
-    console.log("The radio button fired");
+  formatName(area){
+    return area.name.split("_").map(name => name.charAt(0).toUpperCase()+name.slice(1)).join(" ")
+  }
+
+  handleChange = (ev, {value}) => {
+    const hostsInArea = this.props.allHosts.filter(host => host.area === value)
+    const area = this.props.areas.find(area => area.name === value)
+    if(hostsInArea.length < area.limit){
+      this.props.addLog('notify', `${this.props.host.firstName} set in area ${this.formatName(area)}`)
+      this.setState({value: value})
+      this.props.editHost({
+        ...this.props.host,
+        active: this.state.active,
+        area: value
+      })
+    } else {
+      this.props.addLog('error', `Too many hosts. Cannot add ${this.props.host.firstName} to ${this.formatName(area)}`)
+    }
+  }
+
+  toggle = (ev, data) => {
+    this.state.active ? this.props.addLog('notify', `Decomissioned ${this.props.host.firstName}`) :
+                        this.props.addLog('warn', `Activated ${this.props.host.firstName}`)
+    this.setState({active: data.checked})
+    this.props.editHost({
+      ...this.props.host,
+      active: data.checked,
+      area: this.state.value
+    })
   }
 
   render(){
@@ -31,7 +68,7 @@ class HostInfo extends Component {
       <Grid>
         <Grid.Column width={6}>
           <Image
-            src={ /* pass in the right image here */ }
+            src={ this.props.host.imageUrl}
             floated='left'
             size='small'
             className="hostImg"
@@ -41,16 +78,14 @@ class HostInfo extends Component {
           <Card>
             <Card.Content>
               <Card.Header>
-                {"Bob"} | { true ? <Icon name='man' /> : <Icon name='woman' />}
-                { /* Think about how the above should work to conditionally render the right First Name and the right gender Icon */ }
+                {this.props.host.firstName + " " + this.props.host.lastName} |
+                { this.props.host.gender === "male" ? <Icon name='man' /> : <Icon name='woman' />}
               </Card.Header>
               <Card.Meta>
                 <Radio
                   onChange={this.toggle}
-                  label={"Active"}
-                  {/* Sometimes the label should take "Decommissioned". How are we going to conditionally render that? */}
-                  checked={true}
-                  {/* Checked takes a boolean and determines what position the switch is in. Should it always be true? */}
+                  label={this.state.active ? "Active" : "Decomissioned"}
+                  checked={this.state.active}
                   slider
                 />
               </Card.Meta>
