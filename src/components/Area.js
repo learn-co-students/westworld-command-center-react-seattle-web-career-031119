@@ -1,12 +1,23 @@
 import React from 'react';
 import '../stylesheets/Area.css'
+import HostList from './HostList'
 
-const Area = () => (
+const inArea = (hosts, area) => {
+  let hostsInArea = hosts.filter(host => {
+    if ((host.area === area.name) && (host.active)){
+      return host
+    }
+  })
+  return hostsInArea
+}
 
-  <div className='area' id={/* Pass in the area name here to make sure this is styled correctly */}>
-    <h3 className='labels'>{/* Don't just pass in the name from the data...clean that thing up */}</h3>
+const Area = (props) => (
 
-    {/* See Checkpoint 1 item 2 in the Readme for a clue as to what goes here */}
+  <div className='area' id={props.area.name}>
+    <h3 className='labels'>{props.cleanName(props.area.name)}</h3>
+
+    <HostList hosts={inArea(props.hosts, props.area)} handleSelected={props.handleSelected}
+      selected={props.selected}/>
 
   </div>
 
