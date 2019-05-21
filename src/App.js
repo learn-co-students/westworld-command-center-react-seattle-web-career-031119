@@ -25,7 +25,6 @@ class App extends Component {
     fetch('http://localhost:4000/areas')
     .then(res => res.json())
     .then(areas => this.setState({areas}))
-
   }
 
   handleSelected = (selected) =>  {
@@ -53,46 +52,34 @@ class App extends Component {
       return (host.id === selectedCopy.id) ? selectedCopy : host
     })
 
-    let newLog = ''
     if ('area' in attr) {
-      newLog = Log.notify(`${selectedCopy.firstName} set in area ${this.cleanName(selectedCopy.area)}`)
+      this.addLog('notify', `${selectedCopy.firstName} set in area ${this.cleanName(selectedCopy.area)}`)
     } else if ('active' in attr) {
       if (selectedCopy.active) {
-        newLog = Log.warn(`Activated ${selectedCopy.firstName}`)
+        this.addLog('warn', `Activated ${selectedCopy.firstName}`)
       } else {
-        newLog = Log.notify(`Decommissioned ${selectedCopy.firstName}`)
+        this.addLog('notify', `Decommissioned ${selectedCopy.firstName}`)
       }
     }
-    let logCopy = [...this.state.log]
-    logCopy.unshift(newLog)
 
     this.setState({
       selected: selectedCopy,
       hosts: hostsCopy,
-      log: logCopy
     })
   }
 
   toggleAll = (active) => {
-
     let hostsCopy = [...this.state.hosts]
-    hostsCopy.forEach(host => {
-      host.active = active
-      return host
-    })
+    hostsCopy.forEach(host => host.active = active)
 
-    let logCopy = [...this.state.log]
-    let newLog = ''
     if (active) {
-      newLog = Log.warn('Activating all hosts!')
+      this.addLog('warn', 'Activating all hosts!')
     } else {
-      newLog = Log.notify('Decommissiong all hosts.')
+      this.addLog('notify', 'Decommissiong all hosts.')
     }
-    logCopy.unshift(newLog)
 
     this.setState({
       hosts: hostsCopy,
-      log: logCopy
     })
   }
 
@@ -105,18 +92,19 @@ class App extends Component {
     })
 
     let areaOb = this.state.areas.find(a => a.name === area)
-    let ret = false
+    let isFull = false
     if (areaOb.limit < count) {
-      ret = true
-      let newLog = Log.error(`Too many hosts. Cannot add ${this.state.selected.firstName} to ${this.cleanName(area)}`)
-      let logCopy = [...this.state.log]
-      console.log(newLog);
-      logCopy.unshift(newLog)
-      this.setState({
-        log: logCopy
-      })
+      isFull = true
+      this.addLog('error', `Too many hosts. Cannot add ${this.state.selected.firstName} to ${this.cleanName(area)}`)
     }
-    return ret
+    return isFull
+  }
+
+  addLog = (type, data) => {
+    let newLog = Log[type](data)
+    this.setState({
+      log: [newLog, ...this.state.log]
+    })
   }
 
   render(){
